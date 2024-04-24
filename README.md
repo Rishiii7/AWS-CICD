@@ -2,7 +2,7 @@
 AWS Deployment Pipeline using CodeCommit, Code Deploy and Code Pipeline
 
 ## 1.Generating an SSH key authenticate with codecommit
-In the local computer run  ```cd ~/.ssh``` . Run ```ssh-keygen -t rsa -b 4096`` and call the key `codecommit`, don't set any password for the key.
+In the local computer run  ```cd ~/.ssh``` . Run ```ssh-keygen -t rsa -b 4096``` and call the key `codecommit`, don't set any password for the key.
 In the AWS console move to the IAM console. Move to Users=><your-admin-user-account> & open that user
 Move to the Security Credentials  tab.
 Under the AWS Codecommit section, upload an SSH key & paste in the copy of your clipboard.
