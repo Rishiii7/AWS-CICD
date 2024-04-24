@@ -32,7 +32,7 @@ In your terminal, move to the folder where you want the repo stored, and run the
 ssh://git-codecommit.us-east-1.amazonaws.com/v1/repos/catpipeline-codecommit-XXX
 ```  
 
-diagram-export-23-04-2024-20_35_14.png
+![diagram-export-23-04-2024-20_35_14.png](https://github.com/Rishiii7/AWS-CICD/blob/main/diagram-export-23-04-2024-20_35_14.png)
 
 ## 3.  Creating the ECR Private Repository
 Create a private ECR repository with the repository name `catpipline` 
@@ -133,7 +133,7 @@ docker run -p 80:80 <your-image-id>
 Copy the Public IPV4 address and paste it in your browser to test whether the docker image is working or not.
 Once it's working delete the CloudFormation Stack
 
-diagram-export-23-04-2024-20_35_03.png
+![diagram-export-23-04-2024-20_35_03.png](https://github.com/Rishiii7/AWS-CICD/blob/main/diagram-export-23-04-2024-20_35_03.png)
 
 
 
@@ -263,5 +263,4 @@ In the Route 53, Hosted Zone create CNAME record, with value as DNS of the ALB `
 So if you go the browser and paste the Custom domain name it will route to the ALB which will in turn route to the container run by ECS Fargate. 
 
 
-
-diagram-export-23-04-2024-20_34_26.png
+![diagram-export-23-04-2024-20_34_26.png](https://github.com/Rishiii7/AWS-CICD/blob/main/diagram-export-23-04-2024-20_34_26.png)
