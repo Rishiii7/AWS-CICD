@@ -3,10 +3,13 @@ AWS Deployment Pipeline using CodeCommit, Code Deploy and Code Pipeline
 
 ## 1.Generating an SSH key authenticate with codecommit
 In the local computer run  ```cd ~/.ssh``` . Run ```ssh-keygen -t rsa -b 4096``` and call the key `codecommit`, don't set any password for the key.
+
 In the AWS console move to the IAM console. Move to Users=><your-admin-user-account> & open that user
 Move to the Security Credentials  tab.
+
 Under the AWS Codecommit section, upload an SSH key & paste in the copy of your clipboard.
 Copy down the SSH key id  into your clipboard.
+
 From your terminal, run ```nano ~/.ssh/config```  and at the top of the file add the following:
 ```
 Host git-codecommit.*.amazonaws.com
@@ -43,6 +46,7 @@ Allows creation of custom build environments to meet specific project requiremen
 
 Give the project name as `catpipline-build` , and then assign the source provider as *`AWS CodeCommit`*  and repository name `catpipeline-codecommit-XXX` . 
 Select the branch as main  or master . 
+
 Add the environment variables.
 ```
 AWS_DEFAULT_REGION  = us-east-1
@@ -80,7 +84,6 @@ Open role codebuild-catpipeline-service-role , and add the inline permission
 ## 5. Create a buildspec.yml file 
 I took a sample `buildpec.yml` file from internet ```gist.github.com/jweyrich/ee090a223f53700976cc4c2834f8c047```
 
-
 Here's the `buildspec.yml`, save this at root level of the local repo.
 
 ```
@@ -107,9 +110,13 @@ The `buildspec.yml` file is crucial for defining the sequence of operations that
 
 
 In the CodeBuild , you can click on Start Build , once docker container has been built it will push to ECR  that is tagged with latest.
+
 To test this we can deploy a EC2 to check wether the docker has been successfully built properly.
+
 Use this `CloudFormation` link to deploy an EC2 instance with docker installed accept all details, check the checkbox and create the stack. Wait for this to move into the CREATE_COMPLETE  state before continuing.
+
 Connect to the EC2 instance and check if docker is preinstalled in the instance by using docker ps coomand.
+
 Now run this command to authenticate to the ECR repository.
 ```
 aws ecr get-login-password --region us-east-1 | docker login --username AWS --pasword-stdin <your-account-id>.dkr.ecr.us-east-1.amazon.com 
@@ -135,9 +142,13 @@ CodePipeline is a continuous delivery service that orchestrates the entire relea
 
 
 Go the CodePipeline console and click on create pipeline . Add name catpipline and to interact with any other AWS service you need to create a service role for the CodePipeline.
+
 The service role gets automatically populated in your stead.
+
 Add Source Stage, as AWS CodeCommit. In the Repository Name select your repo `catpipeline-codecommit-XXX`. Select Branch as master. 
+
 In the Add Build Stage, Choose AWS CodeBuild as your build provider. Select the region us-east-1.  And give name catpipeline-build. Set Built type as Single build.
+
 Once build is successful it should create a artifact folder in S3 bucket by default. Currently we are not generating any artifact.
 
 
@@ -178,6 +189,7 @@ artifacts:
 
 
 Commit the new `buildspec.yml` to the ecr codecommit repository.
+
 When you push the commit to the AWS repository, the CodeCommits get updated, it will generate an event which in turn will be seen by CloudWatch and it trigger a run of our CodePipeline .
 
 ## 7. Setup CodeDeploy 
@@ -188,45 +200,66 @@ The deploy step is going to take the Docker Image that you created during Code B
 
 ### 7.1 Set up a Load Balancer.
 Create a Internet Facing Application Load Balancer named `catpipelineALB`. 
+
 Select the Default VPC for networking, and select all AZs
+
 Configure a security to allow Any  IPV4 from anywhere from internet on port 80 
+
 Create a Target group, Which will pointing to the container running inside ECS Fargate, And so it need o have target type of IP adress.  Create `catpipelineTG` as TG name. Select Protocol as HTTP and Port 80. 
+
 Create the Load Balancer
 
 ### 7.2 Set up ECS Fargate
 Create a cluster name `allthecatapps`. Select the Default VPC. 
+
 Select the infrasturcture as `Fargate`.
+
 Click on create.
 
 Now we need to create a task and container definition, the way the deploy happens with ECS is that we first need to perform an installation manually. So we need to create task and container definition manually. And then we are going to create a Service and spin that service ourselves first. Once we done that we can update the service whenever we make a new Docker image.
 
 ### 7.3 Create a task definitions
 Under task definition family use catpipelinedemo, and under container 1 name use `catpipeline` and  for the Image URI Copy the latest tagged Image URI form the ECR Repository. 
+
 Set the task role and the task execution role to `ecsTaskExecutionRole`.
+
 Click on create task definition. And Deploy the task definition manually. 
 
 ### 7.4 Create Service
 Under Existing Cluster select `allthecatapps`.
+
 Under Compute configuration, select the Launch Type option and make sure `Fargate` is selected
+
 Under Service name, put `catpipelineservice`, and set desired tasks to `2` for HA. 
+
 Enable Public IP Toggle.
+
 Select Application Load Balancer, and use existing LB `catpipelineALB`, and Choose the container to load balancer as `catpipeline 80:80`.
+
 Select the existing Listener select 80:HTTP. And use existing Target Group.
+
 Click on to create Service.
+
 Make sure both the task are showing last status as Running.
 
 ### 7.5 Create A deploy stage in CodePipeline
 In the `catpipline` click on edit and add new stage to pipeline.
+
 Add stage after Build and name it as `Deploy` 
+
 Inside a Deploy stage, we are going to add an action. For Action name write `Deploy`., and for the action provider scroll down to AWS ECS. 
+
 You will see ECS configuration. For the Input Artifact select BuildArtifact.  Select the cluster as `allthecatapps`. Select the service as `catpipelineservice`. 
+
 In the Image definition file add `imagedefition.json` file which we created during the CodeBuild stage.
 
 This will add to the CodePipeline, so whenever we commit anything to the our code commit repository it's going to run a build, generate a docker image, store that docker image on ECR and then it's going to execute a deploy stage which will deploy the docker image to the service that we've configured within ECS. 
+
 All of this will happen automatically whenever we commit anything to our CodeCommit repository.
 
 ## 8. Configure Route53 to direct the traffic to the load balancer.
 In the Route 53, Hosted Zone create CNAME record, with value as DNS of the ALB `catpipelineALB`.
+
 So if you go the browser and paste the Custom domain name it will route to the ALB which will in turn route to the container run by ECS Fargate. 
 
 
